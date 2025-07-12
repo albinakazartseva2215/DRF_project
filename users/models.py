@@ -6,6 +6,7 @@ from materials.models import Course, Lesson
 
 class User(AbstractUser):
     """Класс модели User"""
+
     username = None
     email = models.EmailField(unique=True, verbose_name="Email")
     phone = models.CharField(
@@ -42,6 +43,7 @@ class User(AbstractUser):
 
 class Payments(models.Model):
     """Класс модели Payments"""
+
     CASH = "cash"
     TRANSFER_TO_ACCOUNT = "transfer"
 

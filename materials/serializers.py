@@ -22,6 +22,7 @@ class CourseSerializer(ModelSerializer):
 
 class CourseDetailSerializer(ModelSerializer):
     """Сериализатор модели Course с выводом поля количества уроков в курсе"""
+
     lessons_in_course = SerializerMethodField()
     lessons = LessonSerializer(many=True, read_only=True)
 

@@ -15,6 +15,14 @@ class Course(models.Model):
     description = models.TextField(
         verbose_name="Описание курса", help_text="Введите описание курса", blank=True, null=True
     )
+    owner_course = models.ForeignKey(
+        "users.User",
+        on_delete=models.SET_NULL,
+        verbose_name="Владелец курса",
+        help_text="Укажите владельца курса",
+        blank=True,
+        null=True,
+    )
 
     class Meta:
         """Meta класс, который задает конфигурационные параметры"""
@@ -56,6 +64,14 @@ class Lesson(models.Model):
         blank=True,
         null=True,
         help_text="Введите ссылку",
+    )
+    owner_lesson = models.ForeignKey(
+        "users.User",
+        on_delete=models.SET_NULL,
+        verbose_name="Владелец урока",
+        help_text="Укажите владельца урока",
+        blank=True,
+        null=True,
     )
 
     class Meta:
