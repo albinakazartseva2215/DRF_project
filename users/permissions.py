@@ -26,5 +26,5 @@ class IsOwner(permissions.BasePermission):
             return obj.owner_course == request.user
         # Для уроков
         elif hasattr(obj, "owner_lesson"):
-            return obj.owner == request.user
+            return obj.owner_lesson == request.user
         return False

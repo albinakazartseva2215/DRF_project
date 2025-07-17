@@ -80,3 +80,38 @@ class Lesson(models.Model):
 
     def __str__(self):
         return self.lesson_name
+
+
+class Subscription(models.Model):
+    """Модель подписки на обновления курса с заданными полями и мета классом"""
+    user = models.ForeignKey(
+        "users.User",
+        on_delete=models.CASCADE,
+        related_name="subscriptions",
+        verbose_name="Пользователь",
+        help_text="Укажите пользователя",
+        blank=True,
+        null=True,
+    )
+    course = models.ForeignKey(
+        Course,
+        on_delete=models.CASCADE,
+        related_name="subscriptions",
+        verbose_name="Курс",
+        blank=True,
+        null=True,
+    )
+    subscribed_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Дата подписки",
+        blank=True,
+        null=True,
+    )
+
+    class Meta:
+        verbose_name = "Подписка"
+        verbose_name_plural = "Подписки"
+        unique_together = [("user", "course")]  # Уникальность пары
+
+    def __str__(self):
+        return f"{self.user.email} подписан на {self.course.course_name}"
