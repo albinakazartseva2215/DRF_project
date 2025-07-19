@@ -23,6 +23,14 @@ class Course(models.Model):
         blank=True,
         null=True,
     )
+    price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        verbose_name="Цена за покупку",
+        help_text="Введите цену",
+        blank=True,
+        null=True,
+    )
 
     class Meta:
         """Meta класс, который задает конфигурационные параметры"""
@@ -70,6 +78,14 @@ class Lesson(models.Model):
         on_delete=models.SET_NULL,
         verbose_name="Владелец урока",
         help_text="Укажите владельца урока",
+        blank=True,
+        null=True,
+    )
+    price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        verbose_name="Цена за покупку",
+        help_text="Введите цену",
         blank=True,
         null=True,
     )

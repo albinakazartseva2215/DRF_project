@@ -1,19 +1,21 @@
-from django.core.management.base import BaseCommand
-from materials.models import Course, Lesson
-from users.models import User, Payments
-from decimal import Decimal
-from django.utils import timezone
 import random
+from decimal import Decimal
+
+from django.core.management.base import BaseCommand
+from django.utils import timezone
+
+from materials.models import Course, Lesson
+from users.models import Payments, User
 
 
 class Command(BaseCommand):
-    help = 'Loads test payments into database'
+    help = "Loads test payments into database"
 
     def handle(self, *args, **options):
         # Проверка существования пользователей
         if not User.objects.exists():
-            self.stdout.write(self.style.ERROR('ОШИБКА: В базе данных нет пользователей'))
-            self.stdout.write(self.style.ERROR('Сначала создайте пользователей!'))
+            self.stdout.write(self.style.ERROR("ОШИБКА: В базе данных нет пользователей"))
+            self.stdout.write(self.style.ERROR("Сначала создайте пользователей!"))
             return
 
         try:
@@ -25,19 +27,18 @@ class Command(BaseCommand):
             lesson1 = Lesson.objects.get(id=2)
             lesson2 = Lesson.objects.get(id=5)
         except (User.DoesNotExist, Course.DoesNotExist, Lesson.DoesNotExist) as e:
-            self.stdout.write(self.style.ERROR(f'ОШИБКА: {str(e)}'))
-            self.stdout.write(self.style.ERROR('Проверьте существование объектов с указанными ID'))
+            self.stdout.write(self.style.ERROR(f"ОШИБКА: {str(e)}"))
+            self.stdout.write(self.style.ERROR("Проверьте существование объектов с указанными ID"))
             return
 
         # Создаем тестовые платежи
         payments = [
             # Платежи за курсы
-            {'user': user1, 'course_payment': course1, 'amount': Decimal('15000.00')},
-            {'user': user2, 'course_payment': course2, 'amount': Decimal('18000.00')},
-
+            {"user": user1, "course_payment": course1, "amount": Decimal("15000.00")},
+            {"user": user2, "course_payment": course2, "amount": Decimal("18000.00")},
             # Платежи за уроки
-            {'user': user1, 'lesson_payment': lesson1, 'amount': Decimal('2000.00')},
-            {'user': user2, 'lesson_payment': lesson2, 'amount': Decimal('1500.00')},
+            {"user": user1, "lesson_payment": lesson1, "amount": Decimal("2000.00")},
+            {"user": user2, "lesson_payment": lesson2, "amount": Decimal("1500.00")},
         ]
 
         created_count = 0
@@ -46,34 +47,33 @@ class Command(BaseCommand):
             duplicate = False
 
             # Проверяем платежи за курсы
-            if payment.get('course_payment'):
+            if payment.get("course_payment"):
                 duplicate = Payments.objects.filter(
-                    user=payment['user'],
-                    amount=payment['amount'],
-                    course_payment=payment['course_payment']
+                    user=payment["user"], amount=payment["amount"], course_payment=payment["course_payment"]
                 ).exists()
 
             # Проверяем платежи за уроки
-            if not duplicate and payment.get('lesson_payment'):
+            if not duplicate and payment.get("lesson_payment"):
                 duplicate = Payments.objects.filter(
-                    user=payment['user'],
-                    amount=payment['amount'],
-                    lesson_payment=payment['lesson_payment']
+                    user=payment["user"], amount=payment["amount"], lesson_payment=payment["lesson_payment"]
                 ).exists()
 
             if not duplicate:
                 Payments.objects.create(
-                    user=payment['user'],
-                    course_payment=payment.get('course_payment'),
-                    lesson_payment=payment.get('lesson_payment'),
-                    amount=payment['amount'],
-                    payment_method=random.choice(['cash', 'transfer']),
-                    date_payment=timezone.now() - timezone.timedelta(days=random.randint(1, 30))
+                    user=payment["user"],
+                    course_payment=payment.get("course_payment"),
+                    lesson_payment=payment.get("lesson_payment"),
+                    amount=payment["amount"],
+                    payment_method=random.choice(["cash", "transfer"]),
+                    date_payment=timezone.now() - timezone.timedelta(days=random.randint(1, 30)),
                 )
                 created_count += 1
                 self.stdout.write(
-                    self.style.SUCCESS(f'Создан платеж для {payment["user"]} на сумму {payment["amount"]}'))
+                    self.style.SUCCESS(f'Создан платеж для {payment["user"]} на сумму {payment["amount"]}')
+                )
             else:
-                self.stdout.write(self.style.WARNING(f'Платеж уже существует: {payment["user"]} - {payment["amount"]}'))
+                self.stdout.write(
+                    self.style.WARNING(f'Платеж уже существует: {payment["user"]} - {payment["amount"]}')
+                )
 
-        self.stdout.write(self.style.SUCCESS(f'Успешно создано {created_count} платежей из {len(payments)}'))
+        self.stdout.write(self.style.SUCCESS(f"Успешно создано {created_count} платежей из {len(payments)}"))

@@ -90,8 +90,22 @@ class Payments(models.Model):
     payment_method = models.CharField(
         max_length=20,
         choices=PAYMENT_METHOD_CHOICES,
-        default=CASH,
+        default=TRANSFER_TO_ACCOUNT,
         verbose_name="Способ оплаты",
+    )
+    link = models.URLField(
+        max_length=400,
+        verbose_name="Ссылка на оплату",
+        blank=True,
+        null=True,
+        help_text="Введите ссылку на оплату",
+    )
+    session_id = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        verbose_name="ID сессии",
+        help_text="Введите id сессии",
     )
 
     class Meta:

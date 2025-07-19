@@ -5,7 +5,7 @@ from users.models import User
 
 class Command(BaseCommand):
     """Класс наследуется от BaseCommand, используется для создания консольных команд, вызываемых через manage.py,
-        здесь используется для создания суперпользователя"""
+    здесь используется для создания суперпользователя"""
 
     def handle(self, *args, **options):
         user = User.objects.create(email="admin@example.com")
