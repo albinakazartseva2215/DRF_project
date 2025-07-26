@@ -1,7 +1,9 @@
 from rest_framework import permissions
 
+
 class IsModer(permissions.BasePermission):
     """Доступ для модераторов"""
+
     def has_permission(self, request, view):
         return request.user.groups.filter(name="Moders").exists()
 
@@ -20,6 +22,7 @@ class IsModerOrOwner(permissions.BasePermission):
 
 class IsOwner(permissions.BasePermission):
     """Разрешает доступ только владельцу курса"""
+
     def has_object_permission(self, request, view, obj):
         # Для курсов
         if hasattr(obj, "owner_course"):

@@ -1,8 +1,8 @@
+from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
-from django.urls import reverse
 
-from materials.models import Lesson, Course, Subscription
+from materials.models import Course, Lesson, Subscription
 from users.models import User
 
 
@@ -19,51 +19,29 @@ class LessonTestCase(APITestCase):
         url = reverse("materials:lessons-retrieve", args=(self.lesson.pk,))
         response = self.client.get(url)
         data = response.json()
-        self.assertEqual(
-            response.status_code, status.HTTP_200_OK
-        )
-        self.assertEqual(
-            data.get("lesson_name"), self.lesson.lesson_name
-        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(data.get("lesson_name"), self.lesson.lesson_name)
 
     def test_lesson_create(self):
         url = reverse("materials:lessons-create")
-        data = {
-            "lesson_name": "DRF",
-            "course": self.course.pk,
-            "video_url": "https://www.youtube.com/"
-        }
+        data = {"lesson_name": "DRF", "course": self.course.pk, "video_url": "https://www.youtube.com/"}
         response = self.client.post(url, data)
-        self.assertEqual(
-            response.status_code, status.HTTP_201_CREATED
-        )
-        self.assertEqual(
-            Lesson.objects.all().count(), 2
-        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Lesson.objects.all().count(), 2)
 
     def test_lesson_update(self):
         url = reverse("materials:lessons-update", args=(self.lesson.pk,))
-        data = {
-            "lesson_name": "Python введение"
-        }
+        data = {"lesson_name": "Python введение"}
         response = self.client.patch(url, data)
         data = response.json()
-        self.assertEqual(
-            response.status_code, status.HTTP_200_OK
-        )
-        self.assertEqual(
-            data.get("lesson_name"), "Python введение"
-        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(data.get("lesson_name"), "Python введение")
 
     def test_lesson_delete(self):
         url = reverse("materials:lessons-delete", args=(self.lesson.pk,))
         response = self.client.delete(url)
-        self.assertEqual(
-            response.status_code, status.HTTP_204_NO_CONTENT
-        )
-        self.assertEqual(
-            Lesson.objects.all().count(), 0
-        )
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(Lesson.objects.all().count(), 0)
 
     def test_lesson_list(self):
         url = reverse("materials:lessons-list")
@@ -81,17 +59,13 @@ class LessonTestCase(APITestCase):
                     "description": None,
                     "lesson_preview": None,
                     "course": self.course.pk,
-                    "owner_lesson": self.user.pk
+                    "owner_lesson": self.user.pk,
                 }
-            ]
+            ],
         }
-        self.assertEqual(
-            response.status_code, status.HTTP_200_OK
-        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        self.assertEqual(
-            data, result
-        )
+        self.assertEqual(data, result)
 
 
 class SubscriptionTestCase(APITestCase):
@@ -105,20 +79,9 @@ class SubscriptionTestCase(APITestCase):
     def test_create_subscription(self):
         """Создание подписки на курс"""
         url = reverse("materials:subscription")
-        data = {
-            "course_id": self.course.pk
-        }
+        data = {"course_id": self.course.pk}
         response = self.client.post(url, data)
 
-        self.assertEqual(
-            response.status_code, status.HTTP_200_OK
-        )
-        self.assertEqual(
-            response.data["message"], "Подписка удалена"
-        )
-        self.assertFalse(
-            Subscription.objects.filter(
-                user=self.user.pk,
-                course=self.course.pk
-            ).exists()
-        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["message"], "Подписка удалена")
+        self.assertFalse(Subscription.objects.filter(user=self.user.pk, course=self.course.pk).exists())

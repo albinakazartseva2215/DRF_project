@@ -1,13 +1,11 @@
-from django.http import JsonResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, viewsets
 from rest_framework.generics import CreateAPIView
 from rest_framework.permissions import AllowAny
 
-from materials.models import Course, Lesson
 from users.models import Payments, User
 from users.serializers import PaymentsSerializer, UserSerializer
-from users.services import create_stripe_price, create_stripe_sessions, create_stripe_product
+from users.services import create_stripe_price, create_stripe_product, create_stripe_sessions
 
 
 class PaymentsViewSet(viewsets.ModelViewSet):
@@ -40,6 +38,6 @@ class UserCreateAPIView(CreateAPIView):
     def perform_create(self, serializer):
         # Создаёт экземпляр User из валидных данных, принудительно устанавливает is_active=True
         user = serializer.save()
-        user.set_password(serializer.validated_data['password'])
+        user.set_password(serializer.validated_data["password"])
         user.is_active = True
         user.save()

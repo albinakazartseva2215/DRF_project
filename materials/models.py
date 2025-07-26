@@ -100,6 +100,7 @@ class Lesson(models.Model):
 
 class Subscription(models.Model):
     """Модель подписки на обновления курса с заданными полями и мета классом"""
+
     user = models.ForeignKey(
         "users.User",
         on_delete=models.CASCADE,

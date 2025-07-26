@@ -1,5 +1,5 @@
-from rest_framework.fields import SerializerMethodField
 from rest_framework import serializers
+from rest_framework.fields import SerializerMethodField
 from rest_framework.serializers import ModelSerializer
 
 from materials.models import Course, Lesson
@@ -8,6 +8,7 @@ from materials.validators import validate_youtube_url
 
 class LessonSerializer(ModelSerializer):
     """Сериализатор модели Lesson"""
+
     video_url = serializers.CharField(validators=[validate_youtube_url])
 
     class Meta:

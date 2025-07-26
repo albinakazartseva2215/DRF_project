@@ -13,6 +13,7 @@ class PaymentsSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     """Сериализатор модели User"""
+
     password = serializers.CharField(write_only=True)
 
     class Meta:
