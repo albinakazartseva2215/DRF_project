@@ -2,7 +2,7 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
-from django.conf.global_settings import STATIC_ROOT
+# from django.conf.global_settings import STATIC_ROOT
 from dotenv import load_dotenv
 
 # Загружаем переменные окружения из файла .env
@@ -133,7 +133,7 @@ STATICFILES_DIRS = [
     / "static",
 ]
 
-STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+# STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
