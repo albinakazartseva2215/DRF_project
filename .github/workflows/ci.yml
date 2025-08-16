@@ -15,6 +15,10 @@ jobs:
         with:
           python-version: '3.13'
 
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+
       - name: Install flake8
         run: |
           poetry install --no-root
