@@ -49,7 +49,8 @@ jobs:
   #        --only main --no-interaction --no-ansi --no-root
 
       - name: Run tests
-        run: python manage.py test
+        run: | 
+          poetry  run python manage.py test
 
   build:
     needs: test
