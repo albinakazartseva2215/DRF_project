@@ -25,7 +25,7 @@ RUN poetry config virtualenvs.create false \
 COPY . .
 
 # Копируем .env файл
-COPY .env /app/.env
+# COPY .env /app/.env
 
 # Создаем директорию для медиафайлов
 RUN mkdir -p /app/media
