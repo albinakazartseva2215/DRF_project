@@ -85,7 +85,7 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
           docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/myapp:${{ github.sha }}
-          docker stop myapp || true
-          docker rm myapp || true
+          docker stop $(docker ps -q --filter "publish=80") || true
+          docker rm $(docker ps -aq --filter "publish=80") || true
           docker run -d --name myapp -p 80:8000 ${{ secrets.DOCKER_HUB_USERNAME }}/myapp:${{ github.sha }}
           EOF
