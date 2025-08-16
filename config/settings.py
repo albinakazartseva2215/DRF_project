@@ -127,12 +127,12 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 
-STATICFILES_DIRS = [
-    # Здесь вы можете добавить пути к вашим статическим файлам,
-    # если они располагаются вне приложений
-    BASE_DIR
-    / "static",
-]
+# STATICFILES_DIRS = [
+#     # Здесь вы можете добавить пути к вашим статическим файлам,
+#     # если они располагаются вне приложений
+#     BASE_DIR
+#     / "static",
+# ]
 
 # STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
