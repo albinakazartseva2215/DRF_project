@@ -85,7 +85,17 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
           docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/myapp:${{ github.sha }}
+        # 2. Остановка и удаление старого контейнера (с проверкой существования)
+          if docker ps -a | grep -q myapp; then
+              docker stop myapp || true
+              docker rm myapp || true
+          fi
+          
+        # 3. Освобождение порта 80
           docker stop $(docker ps -q --filter "publish=80") || true
           docker rm $(docker ps -aq --filter "publish=80") || true
+          sudo fuser -k 80/tcp || true
+    
+        # 4. Запуск нового контейнера
           docker run -d --name myapp -p 80:8000 ${{ secrets.DOCKER_HUB_USERNAME }}/myapp:${{ github.sha }}
           EOF
