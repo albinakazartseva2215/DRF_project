@@ -49,6 +49,8 @@ jobs:
   #        --only main --no-interaction --no-ansi --no-root
 
       - name: Run tests
+        env:
+          SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
         run: | 
           poetry  run python manage.py test
 
