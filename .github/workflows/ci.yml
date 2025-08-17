@@ -85,9 +85,13 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
           
-          docker-compose -f docker-compose.prod.yml down || true
-          
           docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/myapp:${{ github.sha }}
-
-          docker-compose -f docker-compose.prod.yml up -d
+            docker stop myapp || true
+            docker rm myapp || true
+            
+            # Освобождаем порт 80
+            sudo fuser -k 80/tcp || true
+            
+            # Запускаем контейнер
+            docker run -d --name myapp -p 80:8000 ${{ secrets.DOCKER_HUB_USERNAME }}/myapp:${{ github.sha }}
           EOF
