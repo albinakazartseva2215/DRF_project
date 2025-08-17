@@ -123,14 +123,19 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
           cd ${{ secrets.DEPLOY_DIR }}
-          poetry install --no-dev --no-root
+          python3.13 -m venv venv --clear
+          source venv/bin/activate
+          
+          pip install poetry
+          poetry config virtualenvs.create false
+          
+          poetry install --only main --no-root
           EOF
 
       - name: Migrate
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
           cd ${{ secrets.DEPLOY_DIR }}
-          # Активируем виртуальное окружение Poetry
           source .venv/bin/activate
           python manage.py migrate
           EOF
