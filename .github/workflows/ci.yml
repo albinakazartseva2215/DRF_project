@@ -58,36 +58,43 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
 
+    outputs:
+      image_tag: ${{ steps.set_tag.outputs.tag }}
     steps:
       - name: Check out code
         uses: actions/checkout@v3
 
-      - name: Create .env file
+      - name: Set image tag
+        id: set_tag
         run: |
-          echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" > .env
-          echo "DEBUG=${{ secrets.DEBUG }}" >> .env
-          echo "POSTGRES_DB=${{ secrets.POSTGRES_DB }}" >> .env
-          echo "POSTGRES_USER=${{ secrets.POSTGRES_USER }}" >> .env
-          echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}" >> .env
-          echo "POSTGRES_HOST=${{ secrets.POSTGRES_HOST }}" >> .env
-          echo "POSTGRES_PORT=${{ secrets.POSTGRES_PORT }}" >> .env
-          echo "EMAIL_HOST=${{ secrets.EMAIL_HOST }}" >> .env
-          echo "EMAIL_PORT=${{ secrets.EMAIL_PORT }}" >> .env
-          echo "EMAIL_USE_SSL=${{ secrets.EMAIL_USE_SSL }}" >> .env
-          echo "EMAIL_USE_TLS=${{ secrets.EMAIL_USE_TLS }}" >> .env
-          echo "EMAIL_HOST_USER=${{ secrets.EMAIL_HOST_USER }}" >> .env
-          echo "EMAIL_HOST_PASSWORD=${{ secrets.EMAIL_HOST_PASSWORD }}" >> .env
-          echo "CELERY_BROKER_URL=${{ secrets.CELERY_BROKER_URL }}" >> .env
-          echo "CELERY_RESULT_BACKEND=${{ secrets.CELERY_RESULT_BACKEND }}" >> .env
-          echo "STRIPE_API_KEY=${{ secrets.STRIPE_API_KEY }}" >> .env
+          tag="${GITHUB_SHA:0:7}"
+          echo "tag=$tag" >> $GITHUB_OUTPUT
 
       - name: Log in to Docker Hub
-        run: echo ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }} | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
-      - name: Build and push Docker images
-        run: |
-          docker compose build
-          docker compose push
+      - name: Build and push web image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/myapp-web:${{ steps.set_tag.outputs.tag }}
+            ${{ secrets.DOCKER_HUB_USERNAME }}/myapp-web:latest
+
+      - name: Build and push celery image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/myapp-celery:${{ steps.set_tag.outputs.tag }}
+            ${{ secrets.DOCKER_HUB_USERNAME }}/myapp-celery:latest
 
   deploy:
     runs-on: ubuntu-latest
@@ -105,51 +112,44 @@ jobs:
           ssh-keyscan ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
 
-      - name: install poetry on server
+      - name: Prepare environment file
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
-          curl -sSL https://install.python-poetry.org | python3 -
-          echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
-          source ~/.bashrc
-          poetry config virtualenvs.in-project true
+          cat <<EOF > .env
+          SECRET_KEY=${{ secrets.SECRET_KEY }}
+          DEBUG=${{ secrets.DEBUG }}
+          POSTGRES_DB=${{ secrets.POSTGRES_DB }}
+          POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_HOST=${{ secrets.POSTGRES_HOST }}
+          POSTGRES_PORT=${{ secrets.POSTGRES_PORT }}
+          EMAIL_HOST=${{ secrets.EMAIL_HOST }}
+          EMAIL_PORT=${{ secrets.EMAIL_PORT }}
+          EMAIL_USE_SSL=${{ secrets.EMAIL_USE_SSL }}
+          EMAIL_USE_TLS=${{ secrets.EMAIL_USE_TLS }}
+          EMAIL_HOST_USER=${{ secrets.EMAIL_HOST_USER }}
+          EMAIL_HOST_PASSWORD=${{ secrets.EMAIL_HOST_PASSWORD }}
+          CELERY_BROKER_URL=${{ secrets.CELERY_BROKER_URL }}
+          CELERY_RESULT_BACKEND=${{ secrets.CELERY_RESULT_BACKEND }}
+          STRIPE_API_KEY=${{ secrets.STRIPE_API_KEY }}
+          IMAGE_TAG=${{ needs.build.outputs.image_tag }}
+          DOCKER_HUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }}
           EOF
 
-      - name: Copy code on server
+      - name: Copy files to server
         run: |
-          rsync -avz --exclude='.venv' --exclude='.git' --exclude='__pycache__' --exclude='.env' \
-            ./ ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }}:${{ secrets.DEPLOY_DIR }}/
+          scp .env ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }}:${{ secrets.DEPLOY_DIR }}/
+          scp docker-compose.yml ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }}:${{ secrets.DEPLOY_DIR }}/
+          scp -r nginx ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }}:${{ secrets.DEPLOY_DIR }}/
 
-      - name: Install dependencies
+      - name: Deploy application
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
           cd ${{ secrets.DEPLOY_DIR }}
-          python3.13 -m venv venv --clear
-          source venv/bin/activate
-          
-          pip install poetry
-          poetry config virtualenvs.create false
-          
-          poetry install --only main --no-root
-          EOF
-
-      - name: Migrate
-        run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
-          cd ${{ secrets.DEPLOY_DIR }}
-          source venv/bin/activate
-          python manage.py migrate
-          EOF
-
-      - name: Collecting staticfiles
-        run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
-          cd ${{ secrets.DEPLOY_DIR }}
-          source venv/bin/activate
-          python manage.py collectstatic --noinput
-          EOF
-
-      - name: Restart app
-        run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
-          sudo systemctl restart myapp.service
+          docker compose pull
+          docker compose down
+          docker compose up -d
+          docker compose run --rm web python manage.py migrate
+          docker compose run --rm web python manage.py collectstatic --noinput
+          docker compose restart celery celery_beat
+          docker system prune -af
           EOF
