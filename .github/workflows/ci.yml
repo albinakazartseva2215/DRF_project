@@ -135,11 +135,20 @@ jobs:
           DOCKER_HUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }}
           EOF
 
+      - name: List files before copy
+        run: ls -la
+
       - name: Copy files to server
         run: |
           scp .env ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }}:${{ secrets.DEPLOY_DIR }}/
           scp docker-compose.yml ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }}:${{ secrets.DEPLOY_DIR }}/
-          scp -r nginx ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }}:${{ secrets.DEPLOY_DIR }}/
+          
+          # Проверяем наличие папки nginx перед копированием
+          if [ -d "nginx" ]; then
+            scp -r nginx ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }}:${{ secrets.DEPLOY_DIR }}/
+          else
+            echo "nginx directory not found, skipping"
+          fi
 
       - name: Deploy application
         run: |
