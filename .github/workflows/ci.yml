@@ -110,37 +110,29 @@ jobs:
           ssh-private-key: ${{ secrets.SSH_KEY }}
 
       - name: Deploy application
+        env:
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          EMAIL_HOST_PASSWORD: ${{ secrets.EMAIL_HOST_PASSWORD }}
+          CELERY_BROKER_URL: ${{ secrets.CELERY_BROKER_URL }}
+          CELERY_RESULT_BACKEND: ${{ secrets.CELERY_RESULT_BACKEND }}
+          DEBUG: =${{ secrets.DEBUG }}
+          POSTGRES_DB: =${{ secrets.POSTGRES_DB }}
+          POSTGRES_HOST: =${{ secrets.POSTGRES_HOST }}
+          POSTGRES_PORT: =${{ secrets.POSTGRES_PORT }}
+          POSTGRES_USER: =${{ secrets.POSTGRES_USER }}
+          EMAIL_HOST: =${{ secrets.EMAIL_HOST }}
+          EMAIL_PORT: =${{ secrets.EMAIL_PORT }}
+          EMAIL_USE_SSL: =${{ secrets.EMAIL_USE_SSL }}
+          EMAIL_USE_TLS: =${{ secrets.EMAIL_USE_TLS }}
+          EMAIL_HOST_USER: =${{ secrets.EMAIL_HOST_USER }}
+          IMAGE_TAG: =${{ needs.build.outputs.image_tag }}
+          DOCKER_HUB_USERNAME: =${{ secrets.DOCKER_HUB_USERNAME }}
+          STRIPE_API_KEY: ${{ secrets.STRIPE_API_KEY }}
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
           cd ${{ secrets.DEPLOY_DIR }}
-          # Создаем .env файл напрямую на сервере
-          cat <<ENV > .env
-          DEBUG=${{ secrets.DEBUG }}
-          POSTGRES_DB=${{ secrets.POSTGRES_DB }}
-          POSTGRES_HOST=${{ secrets.POSTGRES_HOST }}
-          POSTGRES_PORT=${{ secrets.POSTGRES_PORT }}
-          POSTGRES_USER=${{ secrets.POSTGRES_USER }}
-          EMAIL_HOST=${{ secrets.EMAIL_HOST }}
-          EMAIL_PORT=${{ secrets.EMAIL_PORT }}
-          EMAIL_USE_SSL=${{ secrets.EMAIL_USE_SSL }}
-          EMAIL_USE_TLS=${{ secrets.EMAIL_USE_TLS }}
-          EMAIL_HOST_USER=${{ secrets.EMAIL_HOST_USER }}
-          IMAGE_TAG=${{ needs.build.outputs.image_tag }}
-          DOCKER_HUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }}
-          ENV
-          
-          # Добавляем секретные переменные
-          echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env
-          echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}" >> .env
-          echo "EMAIL_HOST_PASSWORD=${{ secrets.EMAIL_HOST_PASSWORD }}" >> .env
-          echo "CELERY_BROKER_URL=${{ secrets.CELERY_BROKER_URL }}" >> .env
-          echo "CELERY_RESULT_BACKEND=${{ secrets.CELERY_RESULT_BACKEND }}" >> .env
-          echo "STRIPE_API_KEY=${{ secrets.STRIPE_API_KEY }}" >> .env
-          
-          # Защищаем .env файл
-          chmod 600 .env
-          
-          # Запускаем приложение
+
           docker compose pull
           docker compose down
           docker compose up -d
