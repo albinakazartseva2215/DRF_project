@@ -62,103 +62,34 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
 
-    outputs:
-      image_tag: ${{ steps.set_tag.outputs.tag }}
     steps:
       - name: Check out code
         uses: actions/checkout@v3
 
-      - name: Set image tag
-        id: set_tag
-        run: |
-          tag="${GITHUB_SHA:0:7}"
-          echo "tag=$tag" >> $GITHUB_OUTPUT
-
       - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+        run: echo ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }} | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
 
-      - name: Build and push web image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          tags: |
-            ${{ secrets.DOCKER_HUB_USERNAME }}/myapp-web:${{ steps.set_tag.outputs.tag }}
-            ${{ secrets.DOCKER_HUB_USERNAME }}/myapp-web:latest
+      - name: Build Docker image
+        run: docker build -t ${{ secrets.DOCKER_HUB_USERNAME }}/myapp:${{ github.sha }} .
 
-      - name: Build and push celery image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          tags: |
-            ${{ secrets.DOCKER_HUB_USERNAME }}/myapp-celery:${{ steps.set_tag.outputs.tag }}
-            ${{ secrets.DOCKER_HUB_USERNAME }}/myapp-celery:latest
+      - name: Push Docker image to Docker Hub
+        run: docker push ${{ secrets.DOCKER_HUB_USERNAME }}/myapp:${{ github.sha }}
 
   deploy:
     runs-on: ubuntu-latest
     needs: build
+
     steps:
       - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.9.0
+        uses: webfactory/ssh-agent@v0.8.1
         with:
           ssh-private-key: ${{ secrets.SSH_KEY }}
 
-      - name: Deploy application
-        env:
-          SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          EMAIL_HOST_PASSWORD: ${{ secrets.EMAIL_HOST_PASSWORD }}
-          CELERY_BROKER_URL: ${{ secrets.CELERY_BROKER_URL }}
-          CELERY_RESULT_BACKEND: ${{ secrets.CELERY_RESULT_BACKEND }}
-          DEBUG: ${{ secrets.DEBUG }}
-          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
-          POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
-          POSTGRES_PORT: ${{ secrets.POSTGRES_PORT }}
-          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-          EMAIL_HOST: ${{ secrets.EMAIL_HOST }}
-          EMAIL_PORT: ${{ secrets.EMAIL_PORT }}
-          EMAIL_USE_SSL: ${{ secrets.EMAIL_USE_SSL }}
-          EMAIL_USE_TLS: ${{ secrets.EMAIL_USE_TLS }}
-          EMAIL_HOST_USER: ${{ secrets.EMAIL_HOST_USER }}
-          IMAGE_TAG: ${{ needs.build.outputs.image_tag }}
-          STRIPE_API_KEY: ${{ secrets.STRIPE_API_KEY }}
+      - name: Deploy to Server
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
-          cd ${{ secrets.DEPLOY_DIR }}
-          
-          cat > .env << ENV
-          DEBUG=$DEBUG
-          POSTGRES_DB=$POSTGRES_DB
-          POSTGRES_HOST=$POSTGRES_HOST
-          POSTGRES_PORT=$POSTGRES_PORT
-          POSTGRES_USER=$POSTGRES_USER
-          EMAIL_HOST=$EMAIL_HOST
-          EMAIL_PORT=$EMAIL_PORT
-          EMAIL_USE_SSL=$EMAIL_USE_SSL
-          EMAIL_USE_TLS=$EMAIL_USE_TLS
-          EMAIL_HOST_USER=$EMAIL_HOST_USER
-          IMAGE_TAG=$IMAGE_TAG
-          SECRET_KEY=$DJANGO_SECRET_KEY
-          POSTGRES_PASSWORD=$POSTGRES_PASSWORD
-          EMAIL_HOST_PASSWORD=$EMAIL_HOST_PASSWORD
-          CELERY_BROKER_URL=$CELERY_BROKER_URL
-          CELERY_RESULT_BACKEND=$CELERY_RESULT_BACKEND
-          STRIPE_API_KEY=$STRIPE_API_KEY
-          ENV
-
-          chmod 600 .env
-
-          docker compose pull
-          docker compose down
-          docker compose up -d
-          docker compose run --rm web python manage.py migrate
-          docker compose run --rm web python manage.py collectstatic --noinput
-          docker compose restart celery celery_beat
-          docker system prune -af
+            docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/myapp:${{ github.sha }}
+            docker stop myapp || true
+            docker rm myapp || true
+            docker run -d --name myapp -p 80:8000 ${{ secrets.DOCKER_HUB_USERNAME }}/myapp:${{ github.sha }}
           EOF
