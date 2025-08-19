@@ -111,7 +111,7 @@ jobs:
 
       - name: Deploy application
         env:
-          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           EMAIL_HOST_PASSWORD: ${{ secrets.EMAIL_HOST_PASSWORD }}
           CELERY_BROKER_URL: ${{ secrets.CELERY_BROKER_URL }}
@@ -127,7 +127,6 @@ jobs:
           EMAIL_USE_TLS: ${{ secrets.EMAIL_USE_TLS }}
           EMAIL_HOST_USER: ${{ secrets.EMAIL_HOST_USER }}
           IMAGE_TAG: ${{ needs.build.outputs.image_tag }}
-          DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
           STRIPE_API_KEY: ${{ secrets.STRIPE_API_KEY }}
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
