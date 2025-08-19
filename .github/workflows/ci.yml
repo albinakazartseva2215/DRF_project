@@ -1,6 +1,10 @@
 name: Django CI/CD Pipeline
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [feature/homework_35_2, develop]
+  pull_request:
+    branches: [develop]
 
 jobs:
   lint:
@@ -105,20 +109,6 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_KEY }}
 
-      - name: Add server to known hosts
-        run: |
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-          ssh-keyscan ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
-          chmod 644 ~/.ssh/known_hosts
-
-      - name: Copy configuration files
-        run: |
-          scp docker-compose.yml ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }}:${{ secrets.DEPLOY_DIR }}/
-          if [ -d "nginx" ]; then
-            scp -r nginx ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }}:${{ secrets.DEPLOY_DIR }}/
-          fi
-
       - name: Deploy application
         run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
@@ -149,10 +139,6 @@ jobs:
           
           # Защищаем .env файл
           chmod 600 .env
-          
-          # Исправляем конфигурацию
-          sed -i 's|\.:/app|# Removed volume|g' docker-compose.yml
-          sed -i 's|~/nginx/|./nginx/|g' docker-compose.yml
           
           # Запускаем приложение
           docker compose pull
