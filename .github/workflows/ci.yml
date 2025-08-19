@@ -88,8 +88,12 @@ jobs:
       - name: Deploy to Server
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
-            docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/myapp:${{ github.sha }}
-            docker stop myapp || true
-            docker rm myapp || true
-            docker run -d --name myapp -p 80:8000 ${{ secrets.DOCKER_HUB_USERNAME }}/myapp:${{ github.sha }}
+            docker compose pull
+            docker compose down
+            docker compose up -d
+            sleep 10
+            docker compose exec -e SECRET_KEY=\"$SECRET_KEY\" web python manage.py migrate
+            docker compose exec -e SECRET_KEY=\"$SECRET_KEY\" web python manage.py collectstatic --noinput
+            docker compose restart celery celery_beat
+            docker system prune -af
           EOF
