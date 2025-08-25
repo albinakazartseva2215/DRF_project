@@ -60,6 +60,7 @@ class LessonTestCase(APITestCase):
                     "lesson_preview": None,
                     "course": self.course.pk,
                     "owner_lesson": self.user.pk,
+                    "price": None
                 }
             ],
         }
